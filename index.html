@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方程迭代求解可视化</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>方程迭代求解可视化工具</h1>
+    </header>
+    <main>
+        <div id="controls" class="panel">
+            <h2>控制面板</h2>
+            <label for="method-select">选择方法:</label>
+            <select id="method-select">
+                <option value="simple">简单迭代法</option>
+                <option value="aitken">埃特肯法</option>
+                <option value="newton">牛顿迭代法</option>
+                <option value="secant_single">单点弦截法</option>
+                <option value="secant_double">双点弦截法</option>
+            </select>
+            
+            <div id="input-area">
+                <!-- 输入框将由JS动态生成 -->
+                <p style="color: #888;">请先选择一种方法。</p>
+            </div>
+
+            <button id="iterate-btn">单步迭代</button>
+            <button id="reset-btn">重置</button>
+        </div>
+
+        <div id="visualization" class="panel">
+            <h2>函数图像</h2>
+            <div id="plot"></div>
+        </div>
+
+        <div id="results" class="panel">
+            <h2>迭代结果</h2>
+            <div id="message-area"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>k</th>
+                        <th>x_k</th>
+                        <th>误差估计 |x_k - x_{k-1}|</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body">
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- 1. 引入第三方库 -->
+    <script src="https://unpkg.com/mathjs@11.8.0/lib/browser/math.js"></script>
+    <script src="https://unpkg.com/function-plot@1.22.8/dist/function-plot.js"></script>
+    
+    <!-- 2. 引入自己的JS模块 (注意顺序) -->
+    <script src="js/state.js"></script>
+    <script src="js/plotter.js"></script>
+    <script src="js/solver.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
