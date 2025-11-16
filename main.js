@@ -56,9 +56,9 @@ function handleIteration() {
             const userInput = UI.getUserInput();
             
             // 验证输入是否为空
-            if (appState.currentMethod === 'secant_single') {
+            if (appState.currentMethod === 'secant_single' || appState.currentMethod === 'secant_double') {
                 if (!userInput.funcString || !userInput.initialValue1 || !userInput.initialValue2) {
-                    throw new Error("函数表达式、固定点 x₀ 和迭代初值 x₁ 均不能为空。");
+                    throw new Error("函数表达式和两个初值均不能为空。");
                 }
             } else if (!userInput.funcString || !userInput.initialValue1) { // 其他方法的验证
                 throw new Error("函数表达式和初值不能为空。");
@@ -69,9 +69,9 @@ function handleIteration() {
             appState.initialValue1 = parseFloat(userInput.initialValue1);
             if (isNaN(appState.initialValue1)) throw new Error("初值 x₀ 必须是一个数字。");
 
-            if (appState.currentMethod === 'secant_single') {
+            if (appState.currentMethod === 'secant_single' || appState.currentMethod === 'secant_double') {
                 appState.initialValue2 = parseFloat(userInput.initialValue2); // x₁
-                if (isNaN(appState.initialValue2)) throw new Error("迭代初值 x₁ 必须是数字。");
+                if (isNaN(appState.initialValue2)) throw new Error("初值 x₁ 必须是数字。");
             }
 
             // 根据方法编译函数
@@ -81,6 +81,7 @@ function handleIteration() {
                     appState.funcPrime = math.derivative(appState.funcString, 'x').compile();
                     break;
                 case 'secant_single':
+                case 'secant_double':
                     appState.func = math.parse(appState.funcString).compile();
                     break;
                 case 'simple':
@@ -96,14 +97,16 @@ function handleIteration() {
             }
 
             // 将初值添加到历史记录
-            const firstIterateValue = (appState.currentMethod === 'secant_single') 
-                ? appState.initialValue2 
-                : appState.initialValue1;
-            appState.history.push({
-                k: 0,
-                x: firstIterateValue,
-                error: null // 第0次没有误差
-            });
+            if (appState.currentMethod === 'secant_double') {
+                // 双点弦截法需要将两个初值都加入历史
+                appState.history.push({ k: 0, x: appState.initialValue1, error: null });
+                appState.history.push({ k: 1, x: appState.initialValue2, error: null });
+            } else {
+                const firstIterateValue = (appState.currentMethod === 'secant_single') 
+                    ? appState.initialValue2 
+                    : appState.initialValue1;
+                appState.history.push({ k: 0, x: firstIterateValue, error: null });
+            }
 
             UI.updateResultsTable(appState.history);
 
@@ -117,6 +120,11 @@ function handleIteration() {
     } else {
         // 步骤2：执行后续迭代计算
         try {
+            if (appState.currentMethod === 'secant_double' && appState.history.length < 2) {
+                UI.showMessage("请再次点击'单步迭代'以开始计算。");
+                return; // 首次点击只初始化，不计算
+            }
+
             const currentK = appState.history.length;
             const lastState = appState.history[currentK - 1];
             const x_k = lastState.x;
@@ -165,6 +173,24 @@ function handleIteration() {
                     next_x = solver.secantSingle(f, x_k, x_0_fixed);
                     
                     plotter.drawSecant(x_0_fixed, x_k, next_x, f, true); // true表示有固定点
+                    break;
+                }
+                case 'secant_double': {
+                    console.log(`--- 开始第 ${currentK - 1} 次计算 (Click #${currentK}) ---`);
+                    console.log('当前完整的历史记录:', JSON.parse(JSON.stringify(appState.history)));
+
+                    const x_k_minus_1 = appState.history[currentK - 2].x; // 获取上上个点
+
+                    console.log(`使用的点: x_k (较新的点) = ${x_k}`);
+                    console.log(`使用的点: x_k_minus_1 (较旧的点) = ${x_k_minus_1}`);
+                    console.log(`固定的 x₀ (appState.initialValue1) 是: ${appState.initialValue1}`);
+                    
+                    const f = (x) => appState.func.evaluate({ x: x });
+
+                    next_x = solver.secantDouble(f, x_k, x_k_minus_1);
+                    
+                    // 复用 drawSecant 函数
+                    plotter.drawSecant(x_k_minus_1, x_k, next_x, f, false); // false表示没有固定点
                     break;
                 }
             }

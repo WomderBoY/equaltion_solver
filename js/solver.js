@@ -72,4 +72,26 @@ const solver = {
         // 使用教科书中的公式
         return x_k - fx_k * (x_k - x_0) / denominator;
     },
+
+    /**
+     * 双点弦截法 (割线法) 迭代步
+     * @param {function} f - 一个接收数字并返回数字的普通函数 f(x)
+     * @param {number} x_k - 当前迭代点 (较新的点)
+     * @param {number} x_k_minus_1 - 上一个迭代点 (较旧的点)
+     * @returns {number} - 下一个迭代点 x_{k+1}
+     */
+    secantDouble: (f, x_k, x_k_minus_1) => {
+        const fx_k = f(x_k);
+        const fx_k_minus_1 = f(x_k_minus_1);
+
+        const denominator = fx_k - fx_k_minus_1;
+
+        // 检查分母是否过小
+        if (Math.abs(denominator) < 1e-14) {
+            throw new Error("割线法分母接近于零 (f(x_k) ≈ f(x_{k-1}))，无法计算。");
+        }
+        
+        // 使用标准的割线法公式
+        return x_k - fx_k * (x_k - x_k_minus_1) / denominator;
+    }
 };
