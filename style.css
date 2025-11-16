@@ -116,8 +116,8 @@ th {
     left: 0;
     right: 0;
     bottom: 0; /* 固定到视口底部 */
-    height: 96px; /* 高度，可根据需要调整 */
-    line-height: 96px; /* 垂直居中内容（当不换行时） */
+    height: 80px; /* 高度，可根据需要调整 */
+    line-height: 80px; /* 垂直居中内容（当不换行时） */
     text-align: center;
     background-color: #333; /* 深色背景 */
     color: #f7f7f7; /* 浅色字体 */

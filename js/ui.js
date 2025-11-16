@@ -12,40 +12,40 @@ const UI = {
             case 'aitken':
                 htmlContent = `
                     <label for="phi-func-input">迭代函数 <span data-latex="\\varphi(x)"></span>:</label>
-                    <input type="text" id="phi-func-input" placeholder="例如: sqrt(x + 2)">
+                    <input type="text" id="phi-func-input" placeholder="例如: 1/sqrt(x)">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 1.5">
+                    <input type="text" id="x0-input" placeholder="例如: 0.5">
                 `;
                 break;
             
             case 'newton':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
+                    <input type="text" id="f-func-input" placeholder="例如: e^x - 2">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 1.5">
+                    <input type="text" id="x0-input" placeholder="例如: 2">
                 `;
                 break;
             
             case 'secant_single':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
+                    <input type="text" id="f-func-input" placeholder="例如: -log(x)">
                     <label for="x0-input">固定点 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 0">
+                    <input type="text" id="x0-input" placeholder="例如: 0.5">
                     <label for="x1-input">迭代初值 <span data-latex="x_1"></span>:</label>
-                    <input type="text" id="x1-input" placeholder="例如: 1.5">
+                    <input type="text" id="x1-input" placeholder="例如: 2">
                 `;
                 break;
 
             case 'secant_double':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
+                    <input type="text" id="f-func-input" placeholder="例如: e^x - 3">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 1">
+                    <input type="text" id="x0-input" placeholder="例如: 3">
                     <label for="x1-input">初值 <span data-latex="x_1"></span>:</label>
-                    <input type="text" id="x1-input" placeholder="例如: 1.5">
+                    <input type="text" id="x1-input" placeholder="例如: 2">
                 `;
                 break;
 
