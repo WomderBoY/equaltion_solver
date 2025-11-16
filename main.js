@@ -71,11 +71,16 @@ function handleIteration() {
                     appState.func = math.parse(appState.funcString).compile();
                     appState.funcPrime = math.derivative(appState.funcString, 'x').compile();
                     break;
-                // 其他方法的 case 将在后续添加
+                case 'simple':
+                    appState.phiFunc = math.parse(appState.funcString).compile();
+                    break;
             }
             
-            // 3. 重置并绘制主函数（这是开始可视化的信号）
+            // 3. 重置并绘制主函数
             plotter.drawFunction(appState.funcString);
+            if (appState.currentMethod === 'simple') {
+                plotter.drawYEqualsX(); // 简单迭代法需要 y=x 辅助线
+            }
 
             // 将初值添加到历史记录
             appState.history.push({
@@ -110,7 +115,12 @@ function handleIteration() {
                         x_k
                     );
                     break;
-                 // 其他方法的 case 将在后续添加
+                case 'simple':
+                    next_x = solver.simpleIteration(
+                        (x) => appState.phiFunc.evaluate({ x: x }), // <-- 添加这个包装器
+                        x_k
+                    );
+                    break;
             }
             
             // 检查计算结果是否有效
@@ -131,15 +141,15 @@ function handleIteration() {
             UI.updateResultsTable(appState.history);
             if (appState.currentMethod === 'newton') {
                 plotter.drawNewtonTangent(
-                    lastState,
+                    x_k, 
                     next_x,
-                    (x) => appState.func.evaluate({ x: x }),
-                    (x) => appState.funcPrime.evaluate({ x: x })
+                    (x_value) => appState.func.evaluate({ x: x_value })
                 );
             }
-
-            // console.log(`Iteration ${currentK} successful. New x = ${next_x}. State:`, appState);
-            // console.log("Updated history:", appState.history);
+            else if (appState.currentMethod === 'simple') {
+                // 绘制蛛网图需要上一个点和当前点
+                plotter.drawCobweb(x_k, next_x);
+            }
             
         } catch (error) {
             console.error("Iteration failed:", error);

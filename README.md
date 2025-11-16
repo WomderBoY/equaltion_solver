@@ -15,7 +15,7 @@
     *   简单迭代法 (Fixed-Point / Simple Iteration)：输入 $\varphi(x)$，求解 $x = \varphi(x)$
     *   埃特肯加速 (Aitken's $\Delta^2$ Acceleration)：对同一固定点序列进行加速，仍基于 $\varphi(x)$
     *   牛顿迭代法 (Newton's Method)：求根方程 $f(x)=0$
-    *   假位法 (Regula Falsi / False Position)：保持根被区间 $[a,b]$ 包围
+    *   单点弦截法
     *   割线法 (Secant Method)：使用最近两个迭代点（双点割线）
     *   当用户切换方法时，下方的输入区域应自动更新，以匹配该方法所需的参数（例如，函数表达式、一个或两个初值）。
 
@@ -62,19 +62,14 @@
     |-- main.js            # 应用主入口，负责模块协调和事件绑定
     |-- /js
     |   |-- ui.js          # UI模块：负责所有DOM操作和界面更新
-    |   |-- /solver        # 算法模块：纯函数实现各迭代
-    |   |   |-- fixedPoint.js
-    |   |   |-- aitken.js
-    |   |   |-- newton.js
-    |   |   |-- regulaFalsi.js
-    |   |   |-- secant.js
+    |   |-- solver.js        # 算法模块：纯函数实现各迭代
     |   |-- plotter.js     # 绘图模块：封装function-plot库，提供统一的绘图接口
     |   |-- state.js       # 状态管理模块：存储应用的所有当前状态
     ```
 
 *   **模块职责**:
     *   `state.js`: 定义并导出一个全局状态对象 `appState`，用于存储当前方法、函数表达式、迭代历史、初值、是否收敛/发散等。**任何模块都不应直接修改DOM，而是通过修改state，再由UI模块根据state来渲染界面**。
-    *   `solver`: 包含所有迭代算法的纯函数：fixedPoint / aitken / newton / regulaFalsi / secant；输入必要数值与历史，输出新点及诊断，不做 DOM 操作。
+    *   `solver.js`: 包含所有迭代算法的纯函数：fixedPoint / aitken / newton / regulaFalsi / secant；输入必要数值与历史，输出新点及诊断，不做 DOM 操作。
     *   `plotter.js`: 封装 `function-plot` 的所有操作。提供如 `initializePlot`, `drawFunctions`, `addTangentLine`, `addCobwebPoint` 等高层API。它根据传入的数据在图表上进行绘制。
     *   `ui.js`: 负责将 `appState` 的变化渲染到页面上。例如，根据state更新输入框、结果表格和消息提示。它还负责监听用户的输入事件。
     *   `main.js`: 作为应用的“指挥中心”。它初始化所有模块，绑定核心事件（如按钮点击、下拉菜单选择），并编排整个工作流程：`事件触发 -> 更新state -> 调用solver计算 -> 更新state -> 调用ui和plotter更新视图`。
@@ -102,7 +97,7 @@
         *   调用 `plotter.drawNewtonTangent(...)`，在图上绘制点 $(1.5, f(1.5))$ 处的切线，并标记新点 `x1`。
 5.  **后续迭代**: 用户再次点击“单步迭代”，重复第4步的“计算”、“更新状态”、“更新视图”流程。
 6.  **重置**: 用户点击“重置”按钮。
-    *   `main.js` 调用 `reset()`。
+    *   `main.js` 调用 `resetState()`。
     *   清空 `appState.history` 与标记状态；调用 `UI.clearAll()` 与 `plotter.clearAnnotations()`。
 
 ### 6. 数学公式摘要
@@ -110,50 +105,9 @@
 1. 固定点迭代：\( x_{k+1} = \varphi(x_k) \)
 2. 埃特肯加速：若 \(\Delta^2 x_k = x_{k+2} - 2x_{k+1} + x_k \neq 0\)，\( x_k^{A} = x_k - \dfrac{(x_{k+1}-x_k)^2}{x_{k+2}-2x_{k+1}+x_k} \)
 3. 牛顿法：\( x_{k+1} = x_k - \dfrac{f(x_k)}{f'(x_k)} \)
-4. 假位法：区间 \([a_k,b_k]\)，\( c_k = b_k - f(b_k) \frac{b_k-a_k}{f(b_k)-f(a_k)} \)，用符号判据更新区间。
+4. 单点弦截法：\( x_{k+1} = x_k - \frac{f(x_k)}{f(x_k)-f(x_0)}(x_k - x_0)\)
 5. 割线法：\( x_{k+1} = x_k - f(x_k)\frac{x_k - x_{k-1}}{f(x_k)-f(x_{k-1})} \)
 
-### 7. 误差与收敛
 
-绝对误差：\( e_{abs,k} = |x_k - x_{k-1}| \)；相对误差：\( e_{rel,k} = e_{abs,k}/\max(1,|x_k|) \)。任一 < 阈值 (默认 1e-7) 即判收敛。
-
-### 8. 默认参数
-
-```
-epsilonAbs = 1e-7
-epsilonRel = 1e-7
-maxIter    = 200
-|x|        <= 1e6
-|f(x)|     <= 1e12
-derivativeThreshold = 1e-12
-denominatorThreshold = 1e-14
-```
-
-### 9. 更新后的文件结构
-
-```
-/
-|-- index.html
-|-- style.css
-|-- main.js
-|-- /js
-|   |-- state.js
-|   |-- ui.js
-|   |-- plotter.js
-|   |-- /solver
-|       |-- fixedPoint.js
-|       |-- aitken.js
-|       |-- newton.js
-|       |-- regulaFalsi.js
-|       |-- secant.js
-```
-
-### 10. 可选后续增强
-
-* 导出 CSV
-* 阻尼牛顿 / 重根提示（未来可加）
-* 主题切换与移动端优化
-* 收敛阶经验估计
-* 批量绘制性能优化
 
 ---

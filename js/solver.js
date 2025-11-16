@@ -21,7 +21,16 @@ const solver = {
         return x_k - fxk / f_prime_xk;
     },
 
-    // 其他方法将在后续阶段添加
-    // simpleIteration: (phi, x_k) => { ... },
-    // ...
+    /**
+     * 简单迭代法 (不动点迭代) 步
+     * @param {function} phi - 迭代函数 φ(x), 用于求解不动点 x = φ(x)
+     * @param {number} x_k - 当前迭代点
+     * @returns {number} - 下一个迭代点 x_{k+1}
+     */
+    simpleIteration: (phi, x_k) => {
+        // 根据公式 x_{k+1} = φ(x_k) 直接计算
+        return phi(x_k);
+    },
+
+
 };

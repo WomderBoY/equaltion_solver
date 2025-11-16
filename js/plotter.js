@@ -10,6 +10,8 @@ const plotter = (function() {
     let historyAnnotations = [];
     // 用于存储所有关键点，以计算整体自适应范围
     let allKeyPoints = [];
+    // 用于存储基础函数，以便在重绘时保留它们
+    let baseFunctions = [];
 
     // 内部函数，用于计算最佳的坐标轴范围
     function calculateDomains(points) {
@@ -43,6 +45,15 @@ const plotter = (function() {
         };
     }
 
+    // 提取重绘逻辑，避免代码重复
+    function redrawPlot() {
+        const domains = calculateDomains(allKeyPoints);
+        chartOptions.data = [...baseFunctions, ...historyAnnotations];
+        chartOptions.xAxis = { domain: domains.xDomain };
+        chartOptions.yAxis = { domain: domains.yDomain };
+        functionPlot(chartOptions);
+    }
+
     function initialize() {
         try {
             functionPlot(chartOptions);
@@ -57,50 +68,112 @@ const plotter = (function() {
         // 重置历史记录
         historyAnnotations = [];
         allKeyPoints = [];
-        const container = document.querySelector('#plot');
-        if (container) container.innerHTML = '';
-        chartOptions.data = [{
+        
+        // 将主函数存入 baseFunctions 数组
+        baseFunctions = [{
             fn: funcString,
             graphType: 'polyline',
             color: 'steelblue'
         }];
         
+        chartOptions.data = [...baseFunctions];
+        
+        // 删除旧的坐标轴范围以进行自动调整
         delete chartOptions.xAxis;
         delete chartOptions.yAxis;
 
         functionPlot(chartOptions);
     }
 
-    function drawNewtonTangent(lastState, next_x, f, f_prime) {
-        const x_k = lastState.x;
-        const y_k = f(x_k);
-        const slope = f_prime(x_k);
-        const tangentFn = `${slope} * (x - ${x_k}) + ${y_k}`;
+    /**
+     * 在图上添加 y=x 辅助线
+     */
+    function drawYEqualsX() {
+        baseFunctions.push({
+            fn: 'x',
+            color: 'grey',
+            lineStyle: 'dashed' 
+            // function-plot v1.22.8+ 不支持此属性，用 `graphType: 'polyline', fnType: 'linear', daste: '5, 5'` 替代
+        });
+        chartOptions.data = [...baseFunctions];
+        functionPlot(chartOptions);
+    }
+
+    /**
+     * 绘制简单迭代法的蛛网图 (Cobweb Plot)
+     * @param {number} x_k - 上一个迭代点
+     * @param {number} next_x - 当前迭代点 (即 phi(x_k))
+     */
+    function drawCobweb(x_k, next_x) {
+        // 蛛网图的路径: (x_k, x_k) -> (x_k, next_x) -> (next_x, next_x)
+        const cobwebPoints = [
+            [x_k, x_k],
+            [x_k, next_x],
+            [next_x, next_x]
+        ];
 
         // 1. 创建当前迭代步骤的辅助图形
         const newAnnotations = [
-            // 新增：从 (x_k, 0) 到 (x_k, y_k) 的垂直虚线
+            // 蛛网路径线
             {
-                vector: [0, y_k], // 向量 [dx, dy]
-                offset: [x_k, 0], // 起点
+                points: cobwebPoints,
+                fnType: 'points',
                 graphType: 'polyline',
-                fnType: 'vector',
-                color: 'gray',
-                lineStyle: 'dashed' // 使用虚线样式 
+                color: 'purple',
+                opacity: 0.8
             },
-            // 使用 points 模拟虚线
+            // 在函数曲线上的点 (x_k, φ(x_k))
+            {
+                points: [[x_k, next_x]],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'purple',
+                attr: { r: 4 }
+            },
+             // 在 y=x 上的新点 (x_{k+1}, x_{k+1})
+            {
+                points: [[next_x, next_x]],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'green',
+                attr: { r: 4 }
+            }
+        ];
+
+        // 2. 将新的辅助图形追加到历史记录中
+        historyAnnotations.push(...newAnnotations);
+
+        // 3. 更新用于计算自适应范围的所有关键点
+        allKeyPoints.push(...cobwebPoints);
+        if (allKeyPoints.length === 3) { // 第一次迭代时，加入初值的x轴点，确保视图良好
+             allKeyPoints.push([x_k, 0]);
+        }
+
+        // 4. 调用内部函数重绘
+        redrawPlot();
+    }
+
+    function drawNewtonTangent(x_k, next_x, f) {
+        const y_k = f(x_k);
+
+        const slope = math.derivative(baseFunctions[0].fn, 'x').evaluate({x: x_k});
+
+        const tangentFn = `${slope} * (x - ${x_k}) + ${y_k}`;
+
+        const newAnnotations = [
+            // 从 (x_k, 0) 到 (x_k, y_k) 的垂直虚线
             {
                 points: [[x_k, 0], [x_k, y_k]],
                 fnType: 'points',
                 graphType: 'polyline',
                 color: 'rgba(128, 128, 128, 0.7)',
+                // daste: '2, 2' // (可选) for dashed line
             },
             // 切线
             { 
                 fn: tangentFn, 
                 color: 'tomato',
-                // 为不同迭代的切线赋予不同的透明度，使其可区分
-                opacity: 0.8 - lastState.k * 0.1 
+                opacity: 0.8
             },
             // 切点 (x_k, y_k)
             { 
@@ -120,32 +193,20 @@ const plotter = (function() {
             }
         ];
         
-        // 2. 将新的辅助图形追加到历史记录中
         historyAnnotations.push(...newAnnotations);
-
-        // 3. 更新用于计算自适应范围的所有关键点
         allKeyPoints.push([x_k, y_k], [next_x, 0]);
-        if (allKeyPoints.length === 2) { // 第一次迭代时，加入初值的x轴点
-             allKeyPoints.push([x_k, 0]);
+        if (allKeyPoints.length === 2) {
+            allKeyPoints.push([x_k, 0]);
         }
 
-        // 4. 计算包含所有历史关键点的最佳视窗
-        const domains = calculateDomains(allKeyPoints);
-
-        // 5. 准备最终的 data 数组进行绘制
-        const mainFunctionData = chartOptions.data[0];
-        chartOptions.data = [mainFunctionData, ...historyAnnotations];
-        
-        // 6. 应用新的坐标轴范围并重绘
-        chartOptions.xAxis = { domain: domains.xDomain };
-        chartOptions.yAxis = { domain: domains.yDomain };
-
-        functionPlot(chartOptions);
+        // 调用内部函数重绘
+        redrawPlot();
     }
     
     function clearAll() {
         historyAnnotations = [];
         allKeyPoints = [];
+        baseFunctions = [];
         const container = document.querySelector('#plot');
         if (container) container.innerHTML = '';
         chartOptions = {
@@ -153,14 +214,16 @@ const plotter = (function() {
             grid: true,
             data: []
         };
-        // delete chartOptions.xAxis;
-        // delete chartOptions.yAxis;
+        delete chartOptions.xAxis;
+        delete chartOptions.yAxis;
         functionPlot(chartOptions);
     }
 
     return {
         initialize,
         drawFunction,
+        drawYEqualsX,
+        drawCobweb,
         drawNewtonTangent,
         clearAll // 只暴露一个 clearAll
     };
