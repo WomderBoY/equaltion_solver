@@ -12,40 +12,40 @@ const UI = {
             case 'aitken':
                 htmlContent = `
                     <label for="phi-func-input">迭代函数 <span data-latex="\\varphi(x)"></span>:</label>
-                    <input type="text" id="phi-func-input" placeholder="例如: 1/sqrt(x)">
+                    <input type="text" id="phi-func-input" placeholder="例如: 1/sqrt(x)" data-example="1/sqrt(x)">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 0.5">
+                    <input type="text" id="x0-input" placeholder="例如: 0.5" data-example="0.5">
                 `;
                 break;
             
             case 'newton':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: e^x - 2">
+                    <input type="text" id="f-func-input" placeholder="例如: e^x - 2" data-example="e^x - 2">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 2">
+                    <input type="text" id="x0-input" placeholder="例如: 2" data-example="2">
                 `;
                 break;
             
             case 'secant_single':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: -log(x)">
+                    <input type="text" id="f-func-input" placeholder="例如: -log(x)" data-example="-log(x)">
                     <label for="x0-input">固定点 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 0.5">
+                    <input type="text" id="x0-input" placeholder="例如: 0.5" data-example="0.5">
                     <label for="x1-input">迭代初值 <span data-latex="x_1"></span>:</label>
-                    <input type="text" id="x1-input" placeholder="例如: 2">
+                    <input type="text" id="x1-input" placeholder="例如: 2" data-example="2">
                 `;
                 break;
 
             case 'secant_double':
                 htmlContent = `
                     <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
-                    <input type="text" id="f-func-input" placeholder="例如: e^x - 3">
+                    <input type="text" id="f-func-input" placeholder="例如: e^x - 3" data-example="e^x - 3">
                     <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
-                    <input type="text" id="x0-input" placeholder="例如: 3">
+                    <input type="text" id="x0-input" placeholder="例如: 3" data-example="3">
                     <label for="x1-input">初值 <span data-latex="x_1"></span>:</label>
-                    <input type="text" id="x1-input" placeholder="例如: 2">
+                    <input type="text" id="x1-input" placeholder="例如: 2" data-example="2">
                 `;
                 break;
 
@@ -148,4 +148,34 @@ const UI = {
 // 在 DOM 完全加载后尝试渲染页面中所有 data-latex 元素（以防初始表头需要渲染）
 document.addEventListener('DOMContentLoaded', () => {
     if (UI && UI.renderKatex) UI.renderKatex();
+    // Attach Tab-to-load-example handler once (delegated on container)
+    if (UI && UI.attachExampleTabHandler) UI.attachExampleTabHandler();
 });
+
+/**
+ * 给输入区域添加一个委派键盘处理器：按 Tab 时把 data-example 填入输入框
+ */
+UI.attachExampleTabHandler = () => {
+    if (UI._exampleHandlerAttached) return;
+    const container = document.getElementById('input-area');
+    if (!container) return;
+
+    container.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const target = e.target;
+        if (!target || target.tagName !== 'INPUT') return;
+        const example = target.getAttribute('data-example');
+        if (!example) return;
+        // 仅当输入框为空（或只含空白）时才用示例填充；否则保留默认 Tab 行为（切换焦点）
+        if (target.value && target.value.trim() !== '') {
+            return; // 不阻止默认，允许焦点切换
+        }
+        e.preventDefault();
+        // 填入示例（替换当前空值）
+        target.value = example;
+        // 将光标移到末尾
+        try { target.setSelectionRange(target.value.length, target.value.length); } catch (err) {}
+    }, false);
+
+    UI._exampleHandlerAttached = true;
+};
