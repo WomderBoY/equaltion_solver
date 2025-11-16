@@ -146,10 +146,82 @@ const plotter = (function() {
         // 3. 更新用于计算自适应范围的所有关键点
         allKeyPoints.push(...cobwebPoints);
         if (allKeyPoints.length === 3) { // 第一次迭代时，加入初值的x轴点，确保视图良好
-             allKeyPoints.push([x_k, 0]);
+            allKeyPoints.push([x_k, 0]);
         }
 
         // 4. 调用内部函数重绘
+        redrawPlot();
+    }
+
+    /**
+     * 完整绘制一步埃特肯加速法的几何过程
+     * @param {number} x_start - 本轮迭代的起始点 (x_k)
+     * @param {number} p1 - 第一次简单迭代结果 (φ(x_k))
+     * @param {number} p2 - 第二次简单迭代结果 (φ(p1))
+     * @param {number} x_accelerated - 最终加速点
+     */
+    function drawAitkenStep(x_start, p1, p2, x_accelerated) {
+        // 定义几何点
+        const pointA = [x_start, p1]; // A(x_k, x_{k+1})
+        const pointB = [p1, p2];      // B(x_{k+1}, x_{k+2})
+        const pointC = [x_accelerated, x_accelerated]; // C(加速点)
+
+        // 割线 AB 的方程
+        const slope = (pointB[1] - pointA[1]) / (pointB[0] - pointA[0]);
+        // 检查斜率是否有效，避免除以零
+        const secantFn = Math.abs(pointB[0] - pointA[0]) < 1e-14 ? `y=${pointA[1]}` : `${slope} * (x - ${pointA[0]}) + ${pointA[1]}`;
+
+        const newAnnotations = [
+            // 1. 绘制第一段“试探性”蛛网图 (x_start -> p1)
+            // 使用灰色和虚线表示这是中间步骤
+            {
+                points: [[x_start, x_start], [x_start, p1], [p1, p1]],
+                fnType: 'points',
+                graphType: 'polyline',
+                color: 'grey',
+                opacity: 0.7,
+                lineStyle: 'dashed' // 同样，依赖 function-plot 版本
+            },
+            // 2. 绘制第二段“试探性”蛛网图 (p1 -> p2)
+            {
+                points: [[p1, p1], [p1, p2], [p2, p2]],
+                fnType: 'points',
+                graphType: 'polyline',
+                color: 'grey',
+                opacity: 0.7,
+                lineStyle: 'dashed'
+            },
+            // 3. 绘制核心的割线 AB
+            {
+                fn: secantFn,
+                color: 'orangered',
+                graphType: 'polyline',
+                opacity: 0.9
+            },
+            // 4. 标记割线上的点 A 和 B
+            {
+                points: [pointA, pointB],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'orangered',
+                attr: { r: 4 }
+            },
+            // 5. 标记最终的、最重要的加速点 C
+            {
+                points: [pointC],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'limegreen',
+                attr: { r: 5, 'stroke-width': 2, stroke: 'darkgreen' }
+            }
+        ];
+        
+        historyAnnotations.push(...newAnnotations);
+        // 将所有相关的点加入自适应范围计算
+        allKeyPoints.push(
+            [x_start, x_start], pointA, [p1, p1], pointB, [p2, p2], pointC
+        );
+        
         redrawPlot();
     }
 
@@ -203,6 +275,81 @@ const plotter = (function() {
         redrawPlot();
     }
     
+    /**
+     * 绘制弦截法的几何过程 (通用函数)
+     * @param {number} p1_x - 割线端点1的x坐标
+     * @param {number} p2_x - 割线端点2的x坐标
+     * @param {number} next_x - 割线与x轴的交点
+     * @param {function} f - JavaScript函数 f(x)
+     * @param {boolean} isFixedPointMode - true表示p1_x是固定点
+     */
+    function drawSecant(p1_x, p2_x, next_x, f, isFixedPointMode = false) {
+        const p1_y = f(p1_x);
+        const p2_y = f(p2_x);
+        const pointA = [p1_x, p1_y];
+        const pointB = [p2_x, p2_y];
+
+        // 割线方程
+        const slope = (p2_y - p1_y) / (p2_x - p1_x);
+        const secantFn = Math.abs(p2_x - p1_x) < 1e-14 ? `y=0` : `${slope} * (x - ${p1_x}) + ${p1_y}`;
+
+        const newAnnotations = [
+            // 绘制割线
+            {
+                fn: secantFn,
+                color: 'darkcyan',
+                graphType: 'polyline',
+                opacity: 0.8
+            },
+            // 标记端点A
+            {
+                points: [pointA],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: isFixedPointMode ? 'blue' : 'darkcyan', // 固定点用不同颜色
+                attr: { r: 4, 'stroke-width': isFixedPointMode ? 2 : 0 }
+            },
+            // 标记端点B
+            {
+                points: [pointB],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'darkcyan',
+                attr: { r: 4 }
+            },
+            // 标记新的交点
+            {
+                points: [[next_x, 0]],
+                fnType: 'points',
+                graphType: 'scatter',
+                color: 'green',
+                attr: { r: 5 }
+            },
+            // 辅助虚线
+            {
+                points: [[p1_x, 0], pointA],
+                fnType: 'points',
+                graphType: 'polyline',
+                color: 'grey',
+                opacity: 0.7,
+                lineStyle: 'dashed'
+            },
+            {
+                points: [[p2_x, 0], pointB],
+                fnType: 'points',
+                graphType: 'polyline',
+                color: 'grey',
+                opacity: 0.7,
+                lineStyle: 'dashed'
+            }
+        ];
+
+        historyAnnotations.push(...newAnnotations);
+        allKeyPoints.push(pointA, pointB, [next_x, 0]);
+
+        redrawPlot();
+    }
+
     function clearAll() {
         historyAnnotations = [];
         allKeyPoints = [];
@@ -224,7 +371,9 @@ const plotter = (function() {
         drawFunction,
         drawYEqualsX,
         drawCobweb,
+        drawAitkenStep,
+        drawSecant,
         drawNewtonTangent,
-        clearAll // 只暴露一个 clearAll
+        clearAll 
     };
 })();

@@ -56,7 +56,11 @@ function handleIteration() {
             const userInput = UI.getUserInput();
             
             // 验证输入是否为空
-            if (!userInput.funcString || !userInput.initialValue1) {
+            if (appState.currentMethod === 'secant_single') {
+                if (!userInput.funcString || !userInput.initialValue1 || !userInput.initialValue2) {
+                    throw new Error("函数表达式、固定点 x₀ 和迭代初值 x₁ 均不能为空。");
+                }
+            } else if (!userInput.funcString || !userInput.initialValue1) { // 其他方法的验证
                 throw new Error("函数表达式和初值不能为空。");
             }
 
@@ -65,27 +69,39 @@ function handleIteration() {
             appState.initialValue1 = parseFloat(userInput.initialValue1);
             if (isNaN(appState.initialValue1)) throw new Error("初值 x₀ 必须是一个数字。");
 
+            if (appState.currentMethod === 'secant_single') {
+                appState.initialValue2 = parseFloat(userInput.initialValue2); // x₁
+                if (isNaN(appState.initialValue2)) throw new Error("迭代初值 x₁ 必须是数字。");
+            }
+
             // 根据方法编译函数
             switch (appState.currentMethod) {
                 case 'newton':
                     appState.func = math.parse(appState.funcString).compile();
                     appState.funcPrime = math.derivative(appState.funcString, 'x').compile();
                     break;
+                case 'secant_single':
+                    appState.func = math.parse(appState.funcString).compile();
+                    break;
                 case 'simple':
+                case 'aitken':
                     appState.phiFunc = math.parse(appState.funcString).compile();
                     break;
             }
             
             // 3. 重置并绘制主函数
             plotter.drawFunction(appState.funcString);
-            if (appState.currentMethod === 'simple') {
-                plotter.drawYEqualsX(); // 简单迭代法需要 y=x 辅助线
+            if (appState.currentMethod === 'simple' || appState.currentMethod === 'aitken') {
+                plotter.drawYEqualsX(); 
             }
 
             // 将初值添加到历史记录
+            const firstIterateValue = (appState.currentMethod === 'secant_single') 
+                ? appState.initialValue2 
+                : appState.initialValue1;
             appState.history.push({
                 k: 0,
-                x: appState.initialValue1,
+                x: firstIterateValue,
                 error: null // 第0次没有误差
             });
 
@@ -121,6 +137,36 @@ function handleIteration() {
                         x_k
                     );
                     break;
+                case 'aitken': { // 使用块作用域
+                    // 一个 Aitken 步骤需要从 x_k 开始，执行两次简单迭代
+                    const p1 = solver.simpleIteration(
+                        (x) => appState.phiFunc.evaluate({ x: x }),
+                        x_k
+                    );
+                    if (!isFinite(p1)) throw new Error("第一步简单迭代发散。");
+
+                    const p2 = solver.simpleIteration(
+                        (x) => appState.phiFunc.evaluate({ x: x }),
+                        p1
+                    );
+                    if (!isFinite(p2)) throw new Error("第二步简单迭代发散。");
+
+                    // 使用这三点进行加速
+                    next_x = solver.aitken(x_k, p1, p2);
+                    
+                    // 为绘图函数传递所有计算过程中的点
+                    plotter.drawAitkenStep(x_k, p1, p2, next_x);
+                    break;
+                }
+                case 'secant_single': {
+                    const x_0_fixed = appState.initialValue1; // 固定点
+                    const f = (x) => appState.func.evaluate({ x: x });
+
+                    next_x = solver.secantSingle(f, x_k, x_0_fixed);
+                    
+                    plotter.drawSecant(x_0_fixed, x_k, next_x, f, true); // true表示有固定点
+                    break;
+                }
             }
             
             // 检查计算结果是否有效
@@ -130,8 +176,6 @@ function handleIteration() {
             
             // 计算误差
             const error = Math.abs(next_x - x_k);
-
-            // 将新结果添加到历史记录
             appState.history.push({
                 k: currentK,
                 x: next_x,
@@ -139,15 +183,14 @@ function handleIteration() {
             });
 
             UI.updateResultsTable(appState.history);
+            
             if (appState.currentMethod === 'newton') {
                 plotter.drawNewtonTangent(
-                    x_k, 
+                    x_k,
                     next_x,
                     (x_value) => appState.func.evaluate({ x: x_value })
                 );
-            }
-            else if (appState.currentMethod === 'simple') {
-                // 绘制蛛网图需要上一个点和当前点
+            } else if (appState.currentMethod === 'simple') {
                 plotter.drawCobweb(x_k, next_x);
             }
             

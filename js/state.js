@@ -5,7 +5,7 @@ const appState = {
     // 输入数据
     funcString: '',      // f(x) 或 φ(x) 的字符串表达式
     initialValue1: null, // 初值 x0
-    initialValue2: null, // 第二个初值 x1 (仅双点弦截法需要)
+    initialValue2: null, // 第二个初值 x1
     
     // 计算结果
     history: [],         // 存储迭代历史的对象数组 [{k, x, error}, ...]

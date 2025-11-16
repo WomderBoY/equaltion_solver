@@ -19,7 +19,6 @@ const UI = {
                 break;
             
             case 'newton':
-            case 'secant_single':
                 htmlContent = `
                     <label for="f-func-input">函数 f(x):</label>
                     <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
@@ -28,8 +27,19 @@ const UI = {
                 `;
                 break;
             
+            case 'secant_single':
+                htmlContent = `
+                    <label for="f-func-input">函数 f(x):</label>
+                    <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
+                    <label for="x0-input">固定点 x₀:</label>
+                    <input type="text" id="x0-input" placeholder="例如: 0">
+                    <label for="x1-input">迭代初值 x₁:</label>
+                    <input type="text" id="x1-input" placeholder="例如: 1.5">
+                `;
+                break;
+
             case 'secant_double':
-                 htmlContent = `
+                htmlContent = `
                     <label for="f-func-input">函数 f(x):</label>
                     <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
                     <label for="x0-input">初值 x₀:</label>
@@ -62,7 +72,7 @@ const UI = {
 
         inputData.initialValue1 = document.getElementById('x0-input')?.value.trim();
         
-        if (method === 'secant_double') {
+        if (method === 'secant_double' || method === 'secant_single') {
             inputData.initialValue2 = document.getElementById('x1-input')?.value.trim();
         }
 
