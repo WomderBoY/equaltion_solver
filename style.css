@@ -4,6 +4,8 @@ body {
     line-height: 1.6;
     margin: 0;
     background-color: #f4f4f9;
+    /* 给固定底部的 footer 预留空间，避免遮挡内容 */
+    padding-bottom: 80px;
     color: #333;
 }
 
@@ -106,4 +108,20 @@ th {
     background-color: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
+}
+
+/* Footer: simple colored block */
+.site-footer {
+    position: fixed; /* 固定在可视窗口 */
+    left: 0;
+    right: 0;
+    bottom: 0; /* 固定到视口底部 */
+    height: 96px; /* 高度，可根据需要调整 */
+    line-height: 96px; /* 垂直居中内容（当不换行时） */
+    text-align: center;
+    background-color: #333; /* 深色背景 */
+    color: #f7f7f7; /* 浅色字体 */
+    font-size: 1rem; /* 略大些的文字 */
+    border-top: 1px solid rgba(255,255,255,0.06);
+    z-index: 999; /* 保证在最上层 */
 }

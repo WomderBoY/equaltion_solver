@@ -11,40 +11,40 @@ const UI = {
             case 'simple':
             case 'aitken':
                 htmlContent = `
-                    <label for="phi-func-input">迭代函数 φ(x):</label>
+                    <label for="phi-func-input">迭代函数 <span data-latex="\\varphi(x)"></span>:</label>
                     <input type="text" id="phi-func-input" placeholder="例如: sqrt(x + 2)">
-                    <label for="x0-input">初值 x₀:</label>
+                    <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
                     <input type="text" id="x0-input" placeholder="例如: 1.5">
                 `;
                 break;
             
             case 'newton':
                 htmlContent = `
-                    <label for="f-func-input">函数 f(x):</label>
+                    <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
                     <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
-                    <label for="x0-input">初值 x₀:</label>
+                    <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
                     <input type="text" id="x0-input" placeholder="例如: 1.5">
                 `;
                 break;
             
             case 'secant_single':
                 htmlContent = `
-                    <label for="f-func-input">函数 f(x):</label>
+                    <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
                     <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
-                    <label for="x0-input">固定点 x₀:</label>
+                    <label for="x0-input">固定点 <span data-latex="x_0"></span>:</label>
                     <input type="text" id="x0-input" placeholder="例如: 0">
-                    <label for="x1-input">迭代初值 x₁:</label>
+                    <label for="x1-input">迭代初值 <span data-latex="x_1"></span>:</label>
                     <input type="text" id="x1-input" placeholder="例如: 1.5">
                 `;
                 break;
 
             case 'secant_double':
                 htmlContent = `
-                    <label for="f-func-input">函数 f(x):</label>
+                    <label for="f-func-input">函数 <span data-latex="f(x)"></span>:</label>
                     <input type="text" id="f-func-input" placeholder="例如: x^2 - 2">
-                    <label for="x0-input">初值 x₀:</label>
+                    <label for="x0-input">初值 <span data-latex="x_0"></span>:</label>
                     <input type="text" id="x0-input" placeholder="例如: 1">
-                    <label for="x1-input">初值 x₁:</label>
+                    <label for="x1-input">初值 <span data-latex="x_1"></span>:</label>
                     <input type="text" id="x1-input" placeholder="例如: 1.5">
                 `;
                 break;
@@ -54,6 +54,24 @@ const UI = {
         }
 
         container.innerHTML = htmlContent;
+        // 渲染页面中使用 data-latex 占位的数学符号（如果 KaTeX 已加载）
+        UI.renderKatex();
+    },
+
+    /**
+     * 使用 KaTeX 渲染所有带有 data-latex 属性的元素
+     */
+    renderKatex: () => {
+        if (typeof katex === 'undefined') return;
+        document.querySelectorAll('[data-latex]').forEach(el => {
+            const latex = el.getAttribute('data-latex') || '';
+            try {
+                katex.render(latex, el, { throwOnError: false });
+            } catch (e) {
+                // 渲染失败时在控制台输出但不打断流程
+                console.error('KaTeX render error:', e);
+            }
+        });
     },
 
     /**
@@ -126,3 +144,8 @@ const UI = {
     }
 
 };
+
+// 在 DOM 完全加载后尝试渲染页面中所有 data-latex 元素（以防初始表头需要渲染）
+document.addEventListener('DOMContentLoaded', () => {
+    if (UI && UI.renderKatex) UI.renderKatex();
+});

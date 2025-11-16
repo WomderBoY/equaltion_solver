@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>方程迭代求解可视化</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,9 +43,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th>k</th>
-                        <th>x_k</th>
-                        <th>误差估计 |x_k - x_{k-1}|</th>
+                        <th><span data-latex="k"></span></th>
+                        <th><span data-latex="x_k"></span></th>
+                        <th><span data-latex="\varepsilon = \lvert x_k - x_{k-1} \rvert"></span></th>
                     </tr>
                 </thead>
                 <tbody id="results-table-body">
@@ -57,6 +57,8 @@
     <!-- 1. 引入第三方库 -->
     <script src="https://unpkg.com/mathjs@11.8.0/lib/browser/math.js"></script>
     <script src="https://unpkg.com/function-plot@1.22.8/dist/function-plot.js"></script>
+    <!-- KaTeX JS (用于渲染页面中的数学符号，不用于用户输入) -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" crossorigin="anonymous"></script>
     
     <!-- 2. 引入自己的JS模块 (注意顺序) -->
     <script src="js/state.js"></script>
@@ -64,5 +66,8 @@
     <script src="js/solver.js"></script>
     <script src="js/ui.js"></script>
     <script src="main.js"></script>
+    <footer class="site-footer">
+        @ 2025 方程迭代求解可视化. All Rights Reserved
+    </footer>
 </body>
 </html>
